@@ -547,8 +547,18 @@ function genFindBlock() {
  }
 
 function goHome() {
-    top.frames['RTop'].location='<?php echo $GLOBALS['default_top_pane']?>';
-    top.frames['RBot'].location='messages/messages.php?form_active=1';
+	//Ajax call to clear active patient in session
+    $.ajax({
+	  type: "POST",
+	  url: "<?php echo $GLOBALS['webroot'] ?>/library/ajax/unset_session_ajax.php",
+	  data: { func: "unset_pid"},
+	  success:function( msg ) {
+		clearPatient();
+		top.frames['RTop'].location='<?php echo $GLOBALS['default_top_pane']?>';
+		top.frames['RBot'].location='messages/messages.php?form_active=1';
+	  }
+	});
+    
 }
 
  // Reference to the search.php window.
@@ -790,9 +800,9 @@ function getEncounterTargetFrame( name ) {
   active_pid = 0;
   active_encounter = 0;
   setDivContent('current_patient', '<b><?php xl('None','e'); ?></b>');
-  setTitleContent('current_patient', '<b><?php xl('None','e'); ?></b>');
+  $(parent.Title.document.getElementById('current_patient_block')).hide();
   top.window.parent.Title.document.getElementById('past_encounter').innerHTML='';
-  top.window.parent.Title.document.getElementById('current_encounter').innerHTML="<b><?php echo htmlspecialchars( xl('None'), ENT_QUOTES) ?></b>";
+  $(parent.Title.document.getElementById('current_encounter_block')).hide();
   reloadPatient('');
   syncRadios();
  }
