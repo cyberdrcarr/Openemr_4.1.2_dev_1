@@ -1,44 +1,30 @@
 <?php
-// Copyright (C) 2010 Rod Roark <rod@sunsetsystems.com>
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
-
 include_once("../../globals.php");
 include_once($GLOBALS["srcdir"] . "/api.inc");
-include_once($GLOBALS["srcdir"] . "/options.inc.php");
 
 function procedure_order_report($pid, $encounter, $cols, $id) {
- $cols = 1; // force always 1 column
  $count = 0;
- $data = sqlQuery("SELECT pt.name as Procedure_Order,po.* " .
-  "FROM procedure_order as po, procedure_type as pt WHERE " .
-  "po.procedure_type_id = pt.procedure_type_id AND po.procedure_order_id = '$id' AND po.activity = '1'");
+ $dataObject= sqlStatement ( "select * from procedure_order where procedure_order_id='$id'" ) ;
+while($row=sqlFetchArray($dataObject))
+{
+
+$data =$row;
  if ($data) {
-  print "<table cellpadding='0' cellspacing='0'>\n<tr>\n";
+  print "<table>\n<tr>\n";
   foreach($data as $key => $value) {
-   if ($key == "procedure_order_id" || $key == "pid" || $key == "user" || $key == "groupname" ||
-       $key == "authorized" || $key == "activity" || $key == "date" ||
-       $value == "" || $value == "0" || $value == "0.00") {
+   if ($key == "id" || $key == "pid" || $key == "user" || $key == "groupname" ||
+       $key == "authorized" || $key == "activity" || 
+       $value == "" || $value == "0000-00-00 00:00:00") {
     continue;
    }
+   if ($value == "on") {
+    $value = "yes";
+   }
+   $key=ucwords(str_replace("_"," ",$key)); 
 
-   $key=ucwords(str_replace("_"," ",$key));
-   if ($key == "Order Priority") {
-    print "<td valign='top'><span class='bold'>" . xl($key). ": </span><span class='text'>" .
-     generate_display_field(array('data_type'=>'1','list_id'=>'ord_priority'),$value) .
-     " &nbsp;</span></td>\n";
-   }
-   else if ($key == "Order Status") {
-    print "<td valign='top'><span class='bold'>" . xl($key). ": </span><span class='text'>" .
-     generate_display_field(array('data_type'=>'1','list_id'=>'ord_status'),$value) .
-     " &nbsp;</span></td>\n";
-   }
-   else {
-    print "<td valign='top'><span class='bold'>" . xl($key). ": </span><span class='text'>$value &nbsp;</span></td>\n";   
-   }
+	
+   print "<td valign='top'><span class='bold'>$key: </span><span class='text'>$value</span></td>\n";
+
    $count++;
    if ($count == $cols) {
     $count = 0;
@@ -48,4 +34,46 @@ function procedure_order_report($pid, $encounter, $cols, $id) {
   print "</tr>\n</table>\n";
  }
 }
-?>
+ 
+ 
+ 
+ /* report from forms_laborder_code for selected icd and loinc code */ 
+ 
+ $dataObject= sqlStatement ( "select * from `procedure_order_code` where forms_procedure_id='$id'" );
+	
+while($data=sqlFetchArray($dataObject))
+{
+ if ($data) {
+  print "<table>\n<tr>\n";
+	$temp='';
+  foreach($data as $key => $value) {
+   if ($key == "forms_procedure_id"  || $key == "id" || $key == "codetext" ||$key == "codetype"  ||
+       $value == "" || $value == "0000-00-00 00:00:00") {
+    continue;
+   }
+	     if ($value == "on") {
+    $value = "yes";
+   }   
+   $key=ucwords(str_replace("_"," ",$key));   
+   
+   $key=ucwords(str_replace("Codename","code",$key));
+   
+  // if($key=="codetype" && $value=='1')
+ //   $key=ucwords(str_replace("codename","Diagnosis Code",$key)); 
+
+    // if($key=="codetype" && $value=='2')
+   // $key=ucwords(str_replace("codename","Loinc Code",$key));
+	
+   print "<td valign='top'><span class='bold'>$key: </span><span class='text'>$value</span></td>";
+
+   $count++;
+   if ($count == $cols) {
+    $count = 0;
+    print "</tr>\n<tr>\n";
+   }
+  }
+  print "</tr>\n</table>\n";
+ }
+ }
+}
+?> 

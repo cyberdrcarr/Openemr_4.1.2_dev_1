@@ -98,49 +98,50 @@
  //
 
  $primary_docs = array(
-  'ros' => array(xl('Roster')    , 0, 'reports/players_report.php?embed=1'),
-  'cal' => array(xl('Calendar')  , 0, 'main/main_info.php'),
-  'app' => array(xl('Portal Activity')  , 0, '../myportal/index.php'),
-  'msg' => array(xl('Messages')  , 0, 'main/messages/messages.php?form_active=1'),
-  'pwd' => array(xl('Password')  , 0, 'usergroup/user_info.php'),
-  'prf' => array(xl('Preferences')  , 0, 'super/edit_globals.php?mode=user'),
-  'adm' => array(xl('Admin')     , 0, 'usergroup/admin_frameset.php'),
-  'rep' => array(xl('Reports')   , 0, 'reports/index.php'),
+  'ros' => array(xl('Roster') , 0, 'reports/players_report.php?embed=1'),
+  'cal' => array(xl('Calendar') , 0, 'main/main_info.php'),
+  'app' => array(xl('Portal Activity') , 0, '../myportal/index.php'),
+  'msg' => array(xl('Messages') , 0, 'main/messages/messages.php?form_active=1'),
+  'pwd' => array(xl('Password') , 0, 'usergroup/user_info.php'),
+  'prf' => array(xl('Preferences') , 0, 'super/edit_globals.php?mode=user'),
+  'adm' => array(xl('Admin') , 0, 'usergroup/admin_frameset.php'),
+  'rep' => array(xl('Reports') , 0, 'reports/index.php'),
   'ono' => array(xl('Ofc Notes') , 0, 'main/onotes/office_comments.php'),
-  'fax' => array(xl('Fax/Scan')  , 0, 'fax/faxq.php'),
-  'adb' => array(xl('Addr Bk')   , 0, 'usergroup/addrbook_list.php'),
-  'ort' => array(xl('Proc Cat')  , 0, 'orders/types.php'),
-  'orb' => array(xl('Proc Bat')  , 0, 'orders/orders_results.php?batch=1'),
+  'fax' => array(xl('Fax/Scan') , 0, 'fax/faxq.php'),
+  'adb' => array(xl('Addr Bk') , 0, 'usergroup/addrbook_list.php'),
+  'ort' => array(xl('Proc Cat') , 0, 'orders/types.php'),
+  'orc' => array(xl('Proc Load') , 0, 'orders/load_compendium.php'),
+  'orb' => array(xl('Proc Bat') , 0, 'orders/orders_results.php?batch=1'),
   'cht' => array(xl('Chart Trk') , 0, '../custom/chart_tracker.php'),
-  'imp' => array(xl('Import')    , 0, '../custom/import.php'),
-  'bil' => array(xl('Billing')   , 0, 'billing/billing_report.php'),
+  'imp' => array(xl('Import') , 0, '../custom/import.php'),
+  'bil' => array(xl('Billing') , 0, 'billing/billing_report.php'),
   'sup' => array(xl('Superbill') , 0, 'patient_file/encounter/superbill_custom_full.php'),
   'aun' => array(xl('Authorizations'), 0, 'main/authorizations/authorizations.php'),
-  'new' => array(xl('New Pt')    , 0, 'new/new.php'),
+  'new' => array(xl('New Pt') , 0, 'new/new.php'),
   'ped' => array(xl('Patient Education'), 0, 'reports/patient_edu_web_lookup.php'),
-  'lab' => array(xl('Check Lab Results')  , 0, 'orders/lab_exchange.php'),
-  'dem' => array(xl('Patient')   , 1,  "patient_file/summary/demographics.php"),
-  'his' => array(xl('History')   , 1, 'patient_file/history/history.php'),
+  'lab' => array(xl('Check Lab Results') , 0, 'orders/lab_exchange.php'),
+  'dem' => array(xl('Patient') , 1, "patient_file/summary/demographics.php"),
+  'his' => array(xl('History') , 1, 'patient_file/history/history.php'),
   'ens' => array(xl('Visit History'), 1, 'patient_file/history/encounters.php'),
   'nen' => array(xl('Create Visit'), 1, 'forms/newpatient/new.php?autoloaded=1&calenc='),
-  'pre' => array(xl('Rx')        , 1, 'patient_file/summary/rx_frameset.php'),
-  'iss' => array(xl('Issues')    , 1, 'patient_file/summary/stats_full.php?active=all'),
-  'imm' => array(xl('Immunize')  , 1, 'patient_file/summary/immunizations.php'),
+  'pre' => array(xl('Rx') , 1, 'patient_file/summary/rx_frameset.php'),
+  'iss' => array(xl('Issues') , 1, 'patient_file/summary/stats_full.php?active=all'),
+  'imm' => array(xl('Immunize') , 1, 'patient_file/summary/immunizations.php'),
   'doc' => array(xl('Documents') , 1, '../controller.php?document&list&patient_id={PID}'),
   'orp' => array(xl('Proc Pending Rev'), 1, 'orders/orders_results.php?review=1'),
-  'orr' => array(xl('Proc Res')  , 1, 'orders/orders_results.php'),
+  'orr' => array(xl('Proc Res') , 1, 'orders/orders_results.php'),
   'prp' => array(xl('Pt Report') , 1, 'patient_file/report/patient_report.php'),
   'prq' => array(xl('Pt Rec Request') , 1, 'patient_file/transaction/record_request.php'),
-  'pno' => array(xl('Pt Notes')  , 1, 'patient_file/summary/pnotes.php'),
-  'tra' => array(xl('Transact')  , 1, 'patient_file/transaction/transactions.php'),
-  'sum' => array(xl('Summary')   , 1, 'patient_file/summary/summary_bottom.php'),
+  'pno' => array(xl('Pt Notes') , 1, 'patient_file/summary/pnotes.php'),
+  'tra' => array(xl('Transact') , 1, 'patient_file/transaction/transactions.php'),
+  'sum' => array(xl('Summary') , 1, 'patient_file/summary/summary_bottom.php'),
   'enc' => array(xl('Encounter') , 2, 'patient_file/encounter/encounter_top.php'),
   'erx' => array(xl('e-Rx') , 1, 'eRx.php'),
   'err' => array(xl('e-Rx Renewal') , 1, 'eRx.php?page=status'),
   'pay' => array(xl('Payment') , 1, '../patient_file/front_payment.php'),
   'edi' => array(xl('EDI History') , 0, 'billing/edih_view.php')
  );
- $primary_docs['npa']=array(xl('Batch Payments')   , 0, 'billing/new_payment.php');
+ $primary_docs['npa']=array(xl('Batch Payments') , 0, 'billing/new_payment.php');
  if ($GLOBALS['use_charges_panel'] || $GLOBALS['concurrent_layout'] == 2) {
   $primary_docs['cod'] = array(xl('Charges'), 2, 'patient_file/encounter/encounter_bottom.php');
  }
@@ -152,7 +153,7 @@
  $disallowed['adm'] = !(acl_check('admin', 'calendar') ||
   acl_check('admin', 'database') || acl_check('admin', 'forms') ||
   acl_check('admin', 'practice') || acl_check('admin', 'users') ||
-  acl_check('admin', 'acl')      || acl_check('admin', 'super') ||
+  acl_check('admin', 'acl') || acl_check('admin', 'super') ||
   acl_check('admin', 'superbill'));
 
  $disallowed['bil'] = !(acl_check('acct', 'rep') || acl_check('acct', 'eob') ||

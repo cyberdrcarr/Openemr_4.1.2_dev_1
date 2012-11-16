@@ -1,144 +1,397 @@
-<?php
-// Copyright (C) 2010 Rod Roark <rod@sunsetsystems.com>
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
+<?php 
+require_once ("../../globals.php");
+require_once ("$srcdir/api.inc");
+require_once ("$srcdir/forms.inc");
+require_once ("$srcdir/options.inc.php");
+require_once ("$srcdir/formdata.inc.php");
+require_once ("$srcdir/formatting.inc.php");
 
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
-require_once("$srcdir/forms.inc");
-require_once("$srcdir/options.inc.php");
-require_once("$srcdir/formdata.inc.php");
-require_once("$srcdir/formatting.inc.php");
+include_once ("functions.php");
 
 // Defaults for new orders.
-$row = array(
-  'provider_id' => $_SESSION['authUserID'],
-  'date_ordered' => date('Y-m-d'),
-  'date_collected' => date('Y-m-d H:i'),
-);
+$row = array('provider_id' => $_SESSION['authUserID'], 'date_ordered' => date('Y-m-d'), 'date_collected' => date('Y-m-d H:i'), );
 
-if (! $encounter) { // comes from globals.php
- die("Internal error: we do not seem to be in an encounter!");
+if (!$encounter) {// comes from globals.php
+	die("Internal error: we do not seem to be in an encounter!");
 }
 
 function cbvalue($cbname) {
- return $_POST[$cbname] ? '1' : '0';
+	return $_POST[$cbname] ? '1' : '0';
 }
 
 function cbinput($name, $colname) {
- global $row;
- $ret  = "<input type='checkbox' name='$name' value='1'";
- if ($row[$colname]) $ret .= " checked";
- $ret .= " />";
- return $ret;
+	global $row;
+	$ret = "<input type='checkbox' name='$name' value='1'";
+	if ($row[$colname])
+		$ret .= " checked";
+	$ret .= " />";
+	return $ret;
 }
 
 function cbcell($name, $desc, $colname) {
- return "<td width='25%' nowrap>" . cbinput($name, $colname) . "$desc</td>\n";
+	return "<td width='25%' nowrap>" . cbinput($name, $colname) . "$desc</td>\n";
 }
 
 function QuotedOrNull($fld) {
-  if (empty($fld)) return "NULL";
-  return "'$fld'";
+	if (empty($fld))
+		return "NULL";
+	return "'$fld'";
 }
 
-$formid = formData('id', 'G') + 0;
 
-// If Save was clicked, save the info.
-//
-if ($_POST['bn_save']) {
 
-  $sets =
-    "procedure_type_id = " . (formData('form_proc_type') + 0)           . ", " .
-    "date_ordered = " . QuotedOrNull(formData('form_date_ordered'))     . ", " .
-    "provider_id = " . (formData('form_provider_id') + 0)               . ", " .
-    "date_collected = " . QuotedOrNull(formData('form_date_collected')) . ", " .
-    "order_priority = '" . formData('form_order_priority')              . "', " .
-    "order_status = '" . formData('form_order_status')                  . "', " .
-    "patient_instructions = '" . formData('form_patient_instructions')  . "', " .
-    "patient_id = '" . $pid                                             . "', " .
-    "encounter_id = '" . $encounter                                     . "'";
-
-  // If updating an existing form...
-  //
-  if ($formid) {
-    $query = "UPDATE procedure_order SET $sets "  .
-      "WHERE procedure_order_id = '$formid'";
-    sqlStatement($query);
-  }
-
-  // If adding a new form...
-  //
-  else {
-    $query = "INSERT INTO procedure_order SET $sets";
-    $newid = sqlInsert($query);
-    addForm($encounter, "Procedure Order", $newid, "procedure_order", $pid, $userauthorized);
-  }
-
-  formHeader("Redirecting....");
-  formJump();
-  formFooter();
-  exit;
-}
-
-if ($formid) {
-  $row = sqlQuery ("SELECT * FROM procedure_order WHERE " .
-    "procedure_order_id = '$formid' AND activity = '1'") ;
-}
-
-$enrow = sqlQuery("SELECT p.fname, p.mname, p.lname, fe.date FROM " .
-  "form_encounter AS fe, forms AS f, patient_data AS p WHERE " .
-  "p.pid = '$pid' AND f.pid = '$pid' AND f.encounter = '$encounter' AND " .
-  "f.formdir = 'newpatient' AND f.deleted = 0 AND " .
-  "fe.id = f.form_id LIMIT 1");
 ?>
 <html>
 <head>
 <?php html_header_show(); ?>
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css" />
+<link rel="stylesheet" href="<?php echo $css_header; ?>" type="text/css" />
 
 <style>
+	td {
+		font-size: 10pt;
+	}
 
-td {
- font-size:10pt;
-}
-
-.inputtext {
- padding-left:2px;
- padding-right:2px;
-}
+	.inputtext {
+		padding-left: 2px;
+		padding-right: 2px;
+	}
+	
+	#compendum
+	{
+		display: none;
+		position: fixed;
+		width: 550px;
+		height: 160px;
+		top: 50%;
+		left: 50%;
+		margin-left: -350px;
+		margin-top: -100px;
+		background-color: white;
+		border: 2px solid #369;
+		padding: 25px;
+		z-index: 102;
+	}
+	
+	.panel-tool a{
+color : #FFF;
+	}
 
 </style>
 
-<style type="text/css">@import url(<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar.css);</style>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar.js"></script>
-<?php include_once("{$GLOBALS['srcdir']}/dynarch_calendar_en.inc.php"); ?>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar_setup.js"></script>
 
+
+<style type="text/css">@import url(<?php echo $GLOBALS['webroot']?>/library/dynarch_calendar.css);</style>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar_en.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar_setup.js"></script>	
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-1.4.3.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/interface/forms/procedure_order/js/jquery-1.7.2.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/interface/forms/procedure_order/js/jquery-ui-1.8.21.custom.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/interface/forms/procedure_order/js/jquery.easyui.min.js"></script>
+
+<style type="text/css">@import url(<?php echo $GLOBALS['webroot'] ?>/interface/forms/procedure_order/easyui.css);</style>
 <script type="text/javascript" src="../../../library/dialog.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/textformat.js"></script>
-
 <script language='JavaScript'>
 
-// This invokes the find-procedure-type popup.
-var ptvarname;
-function sel_proc_type(varname) {
- var f = document.forms[0];
- if (typeof varname == 'undefined') varname = 'form_proc_type';
- ptvarname = varname;
- dlgopen('../../orders/types.php?popup=1&order=' + f[ptvarname].value, '_blank', 800, 500);
-}
+$(document).ready(function() {
+					$("#done_compendum").click(function(){$('#compendum').hide();});
+					
+					$('#sel_codes_view').datagrid({
+						onSelect : function(rowIndex, rowData ) {
+										var labCode='';
+										var LabrowData = $('#order_view').datagrid('getSelected');										
+								if (LabrowData != null) {
+									labCode=LabrowData.id;											
+								}
+								urlLink= "../../forms/procedure_order/functions.php?mode=loadCompendium&name=" + labCode+"&code="+rowData.codename+"&procedureId=0";
+									$.ajax({
+										url : urlLink,
+										type : "POST",
+										cache : false,
+										dataType : "json",
+										success : function(result) {
+												dlgItems.innerHTML = result;
+												if(result!=null)
+												{
+												$('#dlgItems').dialog('open').dialog('setTitle', 'Compendium Details');
+												$('#fm').form('clear');	
+												}											
+										}
+									});															
+						}
+					});	
+});
 
-// This is for callback by the find-procedure-type popup.
-// Sets both the selected type ID and its descriptive name.
-function set_proc_type(typeid, typename) {
- var f = document.forms[0];
- f[ptvarname].value = typeid;
- f[ptvarname + '_desc'].value = typename;
-}
+
+
+	// This invokes the find-procedure-type popup.
+	var ptvarname;
+	function sel_proc_type(varname) {
+		var f = document.forms[0];
+		if ( typeof varname == 'undefined')
+			varname = 'form_proc_type';
+		ptvarname = varname;
+		dlgopen('../../orders/types.php?popup=1&order=' + f[ptvarname].value, '_blank', 800, 500);
+	}
+
+	// This is for callback by the find-procedure-type popup.
+	// Sets both the selected type ID and its descriptive name.
+	function set_proc_type(typeid, typename) {
+		var f = document.forms[0];
+		f[ptvarname].value = typeid;
+		f[ptvarname + '_desc'].value = typename;
+	}
+	
+
+	//Order List ( Lab Service, Imaging,X-Ray,External/ Internal);
+	function generateOrderList(rootdir)
+	{
+		var selected=document.getElementById('order_type');
+		var sel = selected.options[selected.options.selectedIndex].text;
+		var values ='';
+			var $sltObj = selected;		
+			var opts = $sltObj.options;	
+			
+			for (var i = 0; i < opts.length; i++) {								
+				if(opts[i].selected == true)
+				values += opts[i].value+ '@@@';				
+			}
+			
+			urlLink= rootdir + "/forms/procedure_order/functions.php?mode=orderlist&name=" + values;
+			$('#order_view').datagrid({
+				url:urlLink
+			});			
+	}
+	
+	//Order List ( Lab Service, Imaging,X-Ray,External/ Internal);
+	
+	// Codes List (CPT, ICD,LOINC, SNOMED)
+	function generateCodesList(rootdir)
+	{
+		var selected_value = $("#code_type option:selected").text();
+		var values ='';	
+		var str_function;
+		var selected=document.getElementById('code_type');    //Code_type ICD =2, CPT =1, LOINC=104, CVX =100			
+		var sltObj = selected;
+		var opts = sltObj.options;				
+			for (var i = 0; i < opts.length; i++) {								
+				if(opts[i].selected == true)
+				{			
+				if(opts[i].value != '')
+					{	
+						$.ajax({
+						   url:  rootdir + "/forms/procedure_order/functions.php?func=lonicPickList&selected_value="+selected_value,
+							async:false,
+						   success: function (response) {
+							 str_function = response;
+							 $('#picklist_id').html(str_function); 
+						   }
+						});	
+						
+						$('#lonic_pickList','#lonicSearch').hide();
+						$('#picklist_view').show();					
+					}
+					else{
+						$('#lonic_pickList','#lonicSearch').show();						
+						$('#picklist_view').hide();
+						values=opts[i].value ;						
+					}				
+				}					
+			}
+	}
+	
+	
+	//*************************Show Pick list Drop down when LOINC Code selected from Codes Type. */
+	function generatePickList(rootdir) {
+		var selected=document.getElementById('picklist_id');		
+		var selpick = selected.options[selected.options.selectedIndex].text;				
+		urlLink= rootdir + "/forms/procedure_order/functions.php?mode=picklist&name=" + selpick;
+		$('#codes_view').datagrid({
+				url:urlLink
+			});	
+	}	
+	
+	
+	//Search textbox for codes search
+	function searchCodes(picklist, rootdir) {		
+		var selected = picklist.value;
+		var select=document.getElementById('code_type');
+		var type = select.options[select.options.selectedIndex].value;			
+		urlLink= rootdir + "/forms/procedure_order/functions.php?mode=SearchCodes&name=" +  selected+"&type=" +type;
+		$('#codes_view').datagrid({
+				url:urlLink
+			});			
+	}	
+	
+	
+	
+	//Show the ICD List
+	function showICDList(icdSearch,rootdir) {	
+		if(icdSearch!='' && icdSearch.length >2)
+		{	
+			urlLink= rootdir + "/forms/procedure_order/functions.php?mode=icdlist&name=" + icdSearch;
+			$('#icdCode_view').datagrid({
+				url:urlLink
+			});			
+		}
+	}	
+	
+	
+	
+	function generateCodesType(rootdir)
+	{
+		var selected=$("#picklist_id option:selected").text();		
+			urlLink= rootdir + "/forms/procedure_order/functions.php?mode=codelist&name=" + selected;
+			$('#codes_view').datagrid({
+				url:urlLink
+			});	
+	}
+	
+		
+	function addselectedLOINC()
+	{		
+		var rows = $('#codes_view').datagrid('getSelections');	
+				if (rows != null && rows.length > 0) {				
+				for (var i = 0; i < rows.length; i++) {
+					$('#sel_codes_view').datagrid('appendRow',{
+						codename: rows[i].code,						
+						codetext: rows[i].code_text
+					});						
+				}
+			}
+	}
+
+
+	function removeLOINC()
+	{		
+		
+		var rows = $('#sel_codes_view').datagrid('getSelections');  // get all selected rows
+		var ids = [];
+		for(var i=0; i<rows.length; i++){
+			var index = $('#sel_codes_view').datagrid('getRowIndex',rows[i]);  // get the row index
+			ids.push(index);
+		}
+		ids.sort();  // sort index
+		ids.reverse();  // sort reverse
+			for(var i=0; i<ids.length; i++){
+			$('#sel_codes_view').datagrid('deleteRow',ids[i]);			
+		}		
+		
+	}
+
+
+	function addselectedICD()
+	{		
+		var rows = $('#icdCode_view').datagrid('getSelections');
+				
+			if (rows != null && rows.length > 0) {				
+			for (var i = 0; i < rows.length; i++) {
+				$('#sel_IcdCode_view').datagrid('appendRow',{
+					codename: rows[i].code,						
+					codetext: rows[i].code_text
+				});						
+			}
+		}
+	}
+
+
+	
+	function removeICD()
+	{		
+		var rows = $('#sel_IcdCode_view').datagrid('getSelections');  // get all selected rows
+		var ids = [];
+		for(var i=0; i<rows.length; i++){
+			var index = $('#sel_IcdCode_view').datagrid('getRowIndex',rows[i]);  // get the row index
+			ids.push(index);
+		}
+		ids.sort();  // sort index
+		ids.reverse();  // sort reverse
+			for(var i=0; i<ids.length; i++){
+			$('#sel_IcdCode_view').datagrid('deleteRow',ids[i]);			
+		}	
+	}
+	
+	
+	
+	function CustomizePickList(rootdir)
+	{		
+		var selected_value_customize = $("#code_type option:selected").text();
+		//var selected_code=$("#code_type option:selected").val
+		var select=document.getElementById('code_type');
+		var type = select.options[select.options.selectedIndex].value;
+		dlgopen(rootdir+'/forms/procedure_order/customizePicklist.php?selected_value_customize='+selected_value_customize+'&selected_code='+type, '_blank', 750, 350);
+		return false;
+	}
+
+
+	function SaveCompendium()
+	{   
+		 var answers='' ;
+   		 $.each($('.answer'), function() {
+        	answers+='@@@'+$(this).val();
+    	}); 
+    	
+    	var questions='';
+    	 $.each($('.question'), function() {        	
+        	questions+='@@@'+$(this).val();
+    	});
+ 
+ 		var procedureCode=$('.procedure').val();    	
+    	var LabrowData = $('#order_view').datagrid('getSelected');										
+		if (LabrowData != null) 
+		{
+				labCode=LabrowData.id;											
+		}
+    	urlLink='../../forms/procedure_order/functions.php?mode=saveCompendium&answer='+answers+'&question='+questions+'&labCode='+labCode+'&procedureCode='+procedureCode+"&procedureId=0";
+		$.ajax({
+			type : 'POST',
+			url : urlLink,			
+			success : function(result) {				
+			},
+				error: function(data){
+					alert(data);
+				}			
+		});    	
+    	$('#dlgItems').dialog('close');		
+	}
+
+
+
+	function CancelCompendium()
+	{	
+		$('#dlgItems').dialog('close');	
+	}
+
+	function validate(){
+		var rows = $('#sel_codes_view').datagrid('getRows');
+		var selectedCodes=$('#selectedLOINC').val();
+		if (rows != null && rows.length > 0) {				
+				for (var i = 0; i < rows.length; i++) {	
+					selectedCodes+='@@@'+rows[i].codename+':'+rows[i].codetext;	
+					$('#selectedLOINC').val(selectedCodes);	
+				}
+			}			
+		var rows = $('#sel_IcdCode_view').datagrid('getRows');
+		selectedCodes=$('#selectedICD').val();
+		if (rows != null && rows.length > 0) {				
+				for (var i = 0; i < rows.length; i++) {	
+					selectedCodes+='@@@'+rows[i].codename+':'+rows[i].codetext;	
+					$('#selectedICD').val(selectedCodes);	
+					}	
+				}				
+		var rows = $('#order_view').datagrid('getChecked');		
+		selectedCodes=$('#selectedLabCode').val();		
+		if (rows != null && rows.length > 0) {
+				for (var i = 0; i < rows.length; i++) {	
+					selectedCodes=rows[i].id;	
+					$('#selectedLabCode').val(selectedCodes);	
+					}	
+				}						
+				document.procedureOrder.submit();
+			}
+
+
 
 </script>
 
@@ -146,130 +399,326 @@ function set_proc_type(typeid, typename) {
 
 <body class="body_top">
 
-<form method="post" action="<?php echo $rootdir ?>/forms/procedure_order/new.php?id=<?php echo $formid ?>" onsubmit="return top.restoreSession()">
-
+<form method="post"	action="<?php echo $rootdir; ?>/forms/procedure_order/save.php?mode=new" name="procedureOrder" onsubmit="return top.restoreSession()">		
+	
 <p class='title' style='margin-top:8px;margin-bottom:8px;text-align:center'>
-<?php
-  echo xl('Procedure Order for') . ' ';
-  echo $enrow['fname'] . ' ' . $enrow['mname'] . ' ' . $enrow['lname'];
-  echo ' ' . xl('on') . ' ' . oeFormatShortDate(substr($enrow['date'], 0, 10));
-?>
-</p>
+<?php echo xl('Procedure Order Form');?></p>
 
 <center>
-
-<p>
-<table border='1' width='95%'>
-
-<?php
-$ptid = -1; // -1 means no order is selected yet
+ <table align="center"  border="0px"  style="border:1px solid grey" cellspacing="5px" cellpadding="5px" width="85%" class="formtable">
+  <tr><td>
+<fieldset>
+    <legend style="color:blue;"><b>Patient Details </b></legend>
+    <table align="center"  border="0px" width="100%">
+<?php $ptid = -1;
+// -1 means no order is selected yet
 $ptrow = array('name' => '');
 if (!empty($row['procedure_type_id'])) {
-  $ptid = $row['procedure_type_id'];
-  $ptrow = sqlQuery("SELECT name FROM procedure_type WHERE " .
-    "procedure_type_id = '$ptid'");
+	$ptid = $row['procedure_type_id'];
+	$ptrow = sqlQuery("SELECT name FROM procedure_type WHERE " . "procedure_type_id = '$ptid'");
 }
 ?>
- <tr>
-  <td width='1%' nowrap><b><?php xl('Order Type','e'); ?>:</b></td>
-  <td>
-   <input type='text' size='50' name='form_proc_type_desc'
-    value='<?php echo addslashes($ptrow['name']) ?>'
-    onclick='sel_proc_type()' onfocus='this.blur()'
-    title='<?php xl('Click to select the desired procedure','e'); ?>'
-    style='width:100%;cursor:pointer;cursor:hand' readonly />
-   <input type='hidden' name='form_proc_type' value='<?php echo $ptid ?>' />
-  </td>
- </tr>
 
- <tr>
-  <td width='1%' nowrap><b><?php xl('Ordering Provider','e'); ?>:</b></td>
-  <td>
-<?php
-generate_form_field(array('data_type'=>10,'field_id'=>'provider_id'),
-  $row['provider_id']);
-?>
-  </td>
- </tr>
+<!-- For Procedure Order Change -->
 
- <tr>
-  <td width='1%' nowrap><b><?php xl('Date Ordered','e'); ?>:</b></td>
-  <td>
-<?php
-    echo "<input type='text' size='10' name='form_date_ordered' id='form_date_ordered'" .
-      " value='" . $row['date_ordered'] . "'" .
-      " title='" . xl('Date of this order') . "'" .
-      " onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)'" .
-      " />" .
-      "<img src='$rootdir/pic/show_calendar.gif' align='absbottom' width='24' height='22'" .
-      " id='img_date_ordered' border='0' alt='[?]' style='cursor:pointer'" .
-      " title='" . xl('Click here to choose a date') . "' />";
-?>
-  </td>
- </tr>
 
- <tr>
-  <td width='1%' nowrap><b><?php xl('Internal Time Collected','e'); ?>:</b></td>
-  <td>
-<?php
-    echo "<input type='text' size='16' name='form_date_collected' id='form_date_collected'" .
-      " value='" . $row['date_collected'] . "'" .
-      " title='" . xl('Date and time that the sample was collected') . "'" .
-      // " onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)'" .
-      " />" .
-      "<img src='$rootdir/pic/show_calendar.gif' align='absbottom' width='24' height='22'" .
-      " id='img_date_collected' border='0' alt='[?]' style='cursor:pointer'" .
-      " title='" . xl('Click here to choose a date and time') . "' />";
-?>
-  </td>
- </tr>
+<!--   Patient Name -->
+<tr>
+<td align="left" scope="row" width="25%" ><b><?php xl('Patient Name', 'e'); ?>: </b></td>
+<td valign="top" width="75%">
+<input type="text" size='40' id="patient_name" value="<?php PatientName() ?>" readonly/>
+</td>
+</tr>
 
- <tr>
-  <td width='1%' nowrap><b><?php xl('Priority','e'); ?>:</b></td>
-  <td>
-<?php
-generate_form_field(array('data_type'=>1,'field_id'=>'order_priority',
-  'list_id'=>'ord_priority'), $row['order_priority']);
-?>
-  </td>
- </tr>
+<!-- Patient Insurance -->
 
- <tr>
-  <td width='1%' nowrap><b><?php xl('Status','e'); ?>:</b></td>
-  <td>
-<?php
-generate_form_field(array('data_type'=>1,'field_id'=>'order_status',
-  'list_id'=>'ord_status'), $row['order_status']);
-?>
-  </td>
- </tr>
+<tr>
+<td width='1%' nowrap><b><?php xl('Insurance Info', 'e'); ?>: </b></td>
+<td>
+<input type="text" size='40' id="patient_name" value="<?php patientInsurance() ?>" readonly/>
+</td>
+</tr>
 
- <tr>
-  <td width='1%' nowrap><b><?php xl('Patient Instructions','e'); ?>:</b></td>
-  <td>
-   <textarea rows='3' cols='40' name='form_patient_instructions' style='width:100%'
-    wrap='virtual' class='inputtext' /><?php echo $row['patient_instructions'] ?></textarea>
+</table>
+	</fieldset>
+
+
+
+<br/> <br/>
+	<fieldset>
+    <legend style="color:blue;"> <b> <?php xl('Order Details','e')?> </b> </legend>
+    <table align="center"  border="0px" width="100%">
+	
+<!-- Order Type Drop Down -->
+
+
+
+<tr>
+<td align="left" scope="row" width="25%"><b><?php xl('Lab Code', 'e'); ?>: </b></td>
+<td valign="top" width="75%">
+<select name="order_type"  id="order_type" multiple="multiple" style="width:300px" size="5" onclick="generateOrderList('<?php echo $rootdir; ?>')"><?php OrderType(); ?></select>
+<div> </div>
+<table class="easyui-datagrid" style="width:450px;height:150px" id="order_view" data-options="singleSelect:true">  
+    <thead>  
+        <tr>  
+            <th field="ck" checkbox="true"></th>  
+            <th data-options="field:'abook_type',width:100 "><?php xl('Type','e')?></th>  
+            <th data-options="field:'fname',width:100"><?php xl('Name','e')?></th> 
+            <th data-options="field:'organization',width:250"><?php xl('Organization','e')?></th>  
+        </tr>  
+    </thead>  
+</table>
+</td>
+</tr>  <!-- selectedLabCode -->
+<tr><td colspan="2"><input type="hidden" name="selectedLabCode" id="selectedLabCode" value=''/></td></tr>
+
+
+
+<!-- Ordering Provider -->
+<tr>
+<td width='1%' nowrap><b><?php xl('Ordering Provider', 'e'); ?>:
+</b></td>
+<td>
+	<select name="provider_id"  id="provider_id" ><?php ProviderList(); ?></select>
+</td>
+</tr>
+
+<!-- Multi select Lab/imaging/x-ray Codes (Order Type)-->
+<tr><td colspan="2">&nbsp;</td></tr>
+
+<tr>
+<td width='1%' nowrap><b><?php xl('Lab Test Code', 'e'); ?>: </b></td>
+<td> 
+	<table><tr><td colspan="2"><!-- multiple="multiple" -->
+<select name="code_type"  id="code_type" style="width:200px"  onchange="generateCodesList('<?php echo $rootdir; ?>')"><?php CodeType(); ?></select>
+	&nbsp;&nbsp;&nbsp;<input type="text" size='15'  id="lonic_pickList" value="" style="vertical-align: top"/> 
+  	<input type="button" name="lonicSearch" id="lonicSearch" value="Go" onclick="searchCodes(document.getElementById('lonic_pickList'),'<?php echo $rootdir; ?>')" style="vertical-align: top"/>
+ </td></tr>
+ 
+ <tr><td colspan="2">
+<div id='picklist_view' style="display:none" padding="10px"> <br/>
+	Search From PickList : <select  name="picklist_id" id="picklist_id" onchange=" generateCodesType('<?php echo $rootdir; ?>')">  </select>
+	&nbsp;&nbsp; <input type='button' name='showsearchloinc' id='showsearchloinc' value="Manage Picklist" onclick="CustomizePickList('<?php echo $rootdir; ?>')">	
+</div>
+</td></tr>
+
+<tr><td>
+<table class="easyui-datagrid" style="width:300px;height:150px" id="codes_view" data-options="title :'Lab Test Codes'">  
+    <thead>  
+        <tr>  
+            <th field="ck" checkbox="true"></th>  
+            <th data-options="field:'code',width:100 "><?php xl('Code','e')?></th>  
+            <th data-options="field:'code_text',width:180"><?php xl('Description','e')?></th>             
+        </tr>  
+    </thead>  
+</table>
+</td>
+
+<td> <table class="easyui-datagrid" style="width:300px;height:150px" id="sel_codes_view" data-options="title :'Selected Test Codes'">  
+    <thead>  
+        <tr>  
+            <th field="ck" checkbox="true"></th>  
+            <th data-options="field:'codename',width:100 "><?php xl('Code','e')?></th>  
+            <th data-options="field:'codetext',width:180"><?php xl('Description','e')?></th>             
+        </tr>  
+    </thead>  
+</table></td>
+
+</tr>
+
+<tr><td><input type='button' name='add_LOINC' id='add_LOINC' value="Add to Selected List" onclick="addselectedLOINC()"/></td>
+	
+	<td><input type='button' name='remove_LOINC' id='remove_LOINC' value="Remove Selected Codes" onclick="removeLOINC()"/></td>
+</tr>
+</table>
+</td>
+</tr>
+
+<tr><td><input type="hidden" name="selectedLOINC" id="selectedLOINC" value=''/></td></tr>
+
+<tr><td colspan="2">&nbsp;</td></tr>
+
+<!-- Diagnosis Codes -->
+<tr>
+<td width='1%' nowrap><b><?php xl('Diagnosis Codes', 'e'); ?>: </b></td>
+<td>
+	<table><tr><td colspan="2">
+<input type="text" size='20'  id="icd_id" value="" name="icd_id" title="Please select ICD Code"/>
+<input type="button" name="icdSearch" id="icdSearch" value="Go" onclick="showICDList(document.getElementById('icd_id').value,'<?php echo $rootdir; ?>')"/>
+</td></tr>
+<tr><td> <table class="easyui-datagrid" style="width:300px;height:150px" id="icdCode_view" data-options="title :'Diagnosis Codes'">  
+    <thead>  
+        <tr>  
+            <th field="ck" checkbox="true"></th>  
+            <th data-options="field:'code',width:100 "><?php xl('Code','e')?></th>  
+            <th data-options="field:'code_text',width:180"><?php xl('Description','e')?></th>             
+        </tr>  
+    </thead>  
+</table></td>
+	<td>
+<table class="easyui-datagrid" style="width:300px;height:150px" id="sel_IcdCode_view" data-options="title :'Selected Diagnosis Codes'">  
+    <thead>  
+        <tr>  
+            <th field="ck" checkbox="true"></th>  
+            <th data-options="field:'codename',width:100"><?php xl('Code','e')?></th>  
+            <th data-options="field:'codetext',width:180"><?php xl('Description','e')?></th>             
+        </tr>  
+    </thead>  
+</table>
+</td></tr>
+<tr><td><input type='button' name='add_ICD' id='add_ICD' value="Add to Selected Diagnosis" onclick="addselectedICD()"/></td>
+		<td><input type='button' name='remove_ICD' id='remove_ICD' value="Remove Selected Codes" onclick="removeICD()"/></td>
+	
+</tr>
+</table>
+
+
+</td>
+</tr>
+
+<tr><td colspan="2"><input type="hidden" name="selectedICD" id="selectedICD" value=''/></td></tr>
+
+<tr>
+<td width='1%' nowrap><b><?php xl('Fasting', 'e'); ?>: </b></td>
+<td><input type="radio" id="order_completion_fasting" name="order_completion_fasting" value="Yes"  ><?php xl('Yes','e')?>
+<input type="radio" id="order_completion_fasting" name="order_completion_fasting" value="No" checked="checked"><?php xl('No','e')?>
+</td>
+</tr>
+<tr><td colspan="2">&nbsp;</td></tr>
+<tr>
+<td width='1%' nowrap><b><?php xl('Priority', 'e'); ?>:
+</b></td>
+<td>
+	<select name="order_priority"  id="order_priority"><?php PrioritySelect(); ?></select>
+</td>
+</tr>
+
+<tr>
+<td width='1%' nowrap><b><?php xl('Date Ordered', 'e'); ?>:
+</b></td>
+<td><input type='text' size='20' name='date_ordered' id='date_ordered' 
+					title='<?php xl('yyyy-mm-dd Order Date', 'e'); ?>'
+					onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc);' value="<?php echo date('Y-m-d   H:i:s')?>"  readonly/> 
+					<img src='../../pic/show_calendar.gif' align='absbottom' width='24'
+					height='22' id='img_order_date' border='0' alt='[?]'
+					style='cursor: pointer; cursor: hand'
+					title='<?php xl('Click here to choose Order date', 'e'); ?>'> 
+					<script	LANGUAGE="JavaScript">
+						Calendar.setup({inputField:'date_ordered', ifFormat:'%Y-%m-%d %H:%M:%S', button:'img_order_date', showsTime:'true'});
+   </script> </td>
+
+</tr>
+
+<tr>
+<td width='1%' nowrap><b><?php xl('Status', 'e'); ?>:
+</b></td>
+<td>
+	<select  name="order_status" id="order_status"> <?php orderStatus(); ?> </select>
+</td>
+</tr>
+
+<tr>
+<td width='1%' nowrap><b><?php xl('Patient Instructions', 'e'); ?>:
+</b></td>
+<td>
+<textarea rows='3' cols='70' name='patient_instructions' size="35px" id='patient_instructions'/></textarea>
+</td>
+</tr>
+</table>
+
+</fieldset>
+
+<br/> <br/>
+	<fieldset>
+    <legend style="color:blue;"> <b><?php xl('Specimen Details','e')?> </b> </legend>
+    <table align="center"  border="0px" width="100%">
+
+
+<tr>
+<td align="left" scope="row" width="25%"><b><?php xl('Specimen Type', 'e'); ?>:</b></td>
+<td valign="top" width="75%">
+	<select  name="specimen_type" id="specimen_type"> <?php specimenType(); ?> </select>
+</td>
+</tr>
+
+
+<tr>
+<td width='1%' nowrap><b><?php xl('Specimen Location', 'e'); ?>:
+</b></td>
+<td>
+	<select  name="specimen_location" id="specimen_location"> <?php specimenLocation(); ?> </select>
+</td>
+</tr>
+
+<tr>
+<td width='1%' nowrap><b><?php xl('Collection Date', 'e'); ?>:
+</b></td>
+<td><input type='text' size='20' name='specimen_collection_date' id='specimen_collection_date' 
+					title='<?php xl('yyyy-mm-dd Order Date', 'e'); ?>'
+					onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc);' value="<?php echo date('Y-m-d')?>" readonly/> 
+					<img src='../../pic/show_calendar.gif' align='absbottom' width='24'
+					height='22' id='img_collection_date' border='0' alt='[?]'
+					style='cursor: pointer; cursor: hand'
+					title='<?php xl('Click here to choose Order date', 'e'); ?>'> 
+					<script	LANGUAGE="JavaScript">
+						Calendar.setup({
+							inputField : "specimen_collection_date",
+							ifFormat : "%Y-%m-%d",
+							button : "img_collection_date"
+						});
+   </script> </td>
+
+</tr>
+
+<tr>
+<td width='1%' nowrap><b><?php xl('Collection Time', 'e'); ?>:
+</b></td>
+<td>
+	<input type='text' size='2' name='form_hour' value='<?php echo date('h')?>'
+    title='<?php echo xla('Event start time'); ?>' /> :
+   <input type='text' size='2' name='form_minute' value='<?php echo date('i') ?>'
+    title='<?php echo xla('Event start time'); ?>' />&nbsp;
+   <select name='form_ampm' title='<?php echo xla("Note: 12:00 noon is PM, not AM"); ?>'>
+    <option value='AM' <?php if (date('H')< 12) echo " selected" ?>><?php echo xlt('AM'); ?></option>
+    <option value='PM' <?php if (date('H')> 12) echo " selected" ?>> <?php echo xlt('PM'); ?></option>
+   </select> 
   </td>
- </tr>
+</tr>
+               
+
+<tr>
+<td width='1%' nowrap><b><?php xl('Specimen volume (ml)', 'e'); ?>:
+</b></td>
+<td>
+<input type="text" size='15'  id="specimen_volume" value="" name="specimen_volume" title="Please specimen Volume"/>
+</td>
+</tr>
 
 </table>
 
+</fieldset>
+
+<br/> <br/>
+
+<div id="compendum"></div>
+
+</td></tr>
+
+</table>
+</center>
 <p>
-<input type='submit' name='bn_save' value='<?php xl('Save','e'); ?>' />
-&nbsp;
-<input type='button' value='<?php xl('Cancel','e'); ?>' onclick="top.restoreSession();location='<?php echo $GLOBALS['form_exit_url']; ?>'" />
+<a href="javascript:top.restoreSession();validate();"
+			class="link_submit"><b><?php xl(' [Save]','e')?></b></a>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="<?php echo $GLOBALS['form_exit_url']; ?>" class="link" style="color: #483D8B"
+ onclick="top.restoreSession()">[<b><?php xl('Don\'t Save', 'e'); ?></b>]</a>
 </p>
 
-</center>
 
-<script language='JavaScript'>
-Calendar.setup({inputField:'form_date_ordered', ifFormat:'%Y-%m-%d',
- button:'img_date_ordered'});
-Calendar.setup({inputField:'form_date_collected', ifFormat:'%Y-%m-%d %H:%M',
- button:'img_date_collected', showsTime:true});
-</script>
 
 </form>
 </body>
 </html>
 
+
+<?php 	include ("compendium.php"); ?>

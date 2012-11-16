@@ -1,15 +1,26 @@
-CREATE TABLE IF NOT EXISTS procedure_order (
-  `procedure_order_id`     bigint(20)   NOT NULL AUTO_INCREMENT,
-  `procedure_type_id`      bigint(20)   NOT NULL            COMMENT 'references procedure_type.procedure_type_id',
-  `provider_id`            bigint(20)   NOT NULL DEFAULT 0  COMMENT 'references users.id',
-  `patient_id`             bigint(20)   NOT NULL            COMMENT 'references patient_data.pid',
-  `encounter_id`           bigint(20)   NOT NULL DEFAULT 0  COMMENT 'references form_encounter.encounter',
-  `date_collected`         datetime     DEFAULT NULL        COMMENT 'time specimen collected',
-  `date_ordered`           date         DEFAULT NULL,
-  `order_priority`         varchar(31)  NOT NULL DEFAULT '',
-  `order_status`           varchar(31)  NOT NULL DEFAULT '' COMMENT 'pending,routed,complete,canceled',
-  `patient_instructions`   text         NOT NULL DEFAULT '',
-  `activity`               tinyint(1)   NOT NULL DEFAULT 1  COMMENT '0 if deleted',
-  PRIMARY KEY (`procedure_order_id`)
-) ENGINE=MyISAM;
-
+ CREATE TABLE `procedure_order` (
+  `procedure_order_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `procedure_type_id` bigint(20) NOT NULL COMMENT 'references procedure_type.procedure_type_id',
+  `provider_id` bigint(20) NOT NULL DEFAULT '0' COMMENT 'references users.id',
+  `pid` bigint(20) NOT NULL COMMENT 'references patient_data.pid',
+  `date` datetime DEFAULT NULL,
+  `user` varchar(255) DEFAULT NULL,
+  `groupname` varchar(255) DEFAULT NULL,
+  `authorized` tinyint(4) DEFAULT NULL,
+  `encounter_id` bigint(20) NOT NULL DEFAULT '0' COMMENT 'references form_encounter.encounter',
+  `date_collected` datetime DEFAULT NULL COMMENT 'time specimen collected',
+  `date_ordered` datetime DEFAULT NULL,
+  `order_priority` varchar(31) NOT NULL DEFAULT '',
+  `order_status` varchar(31) NOT NULL DEFAULT '' COMMENT 'pending,routed,complete,canceled',
+  `patient_instructions` text NOT NULL,
+  `activity` tinyint(1) NOT NULL DEFAULT '1' COMMENT '0 if deleted',
+  `lab_id` bigint(20) NOT NULL,
+  `order_completion_fasting` varchar(10) DEFAULT NULL,
+  `referral_to_specialist` text,
+  `specimen_type` varchar(50) DEFAULT NULL,
+  `specimen_location` text,
+  `specimen_collection_date` date DEFAULT NULL,
+  `specimen_collection_time` varchar(20) DEFAULT NULL,
+  `specimen_volume` varchar(30) DEFAULT NULL,
+   PRIMARY KEY (`procedure_order_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=89 DEFAULT CHARSET=utf8;
